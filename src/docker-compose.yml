@@ -1,0 +1,58 @@
+#version: '3.8'
+#
+#services:
+#  multi-tenancy-multi-db:
+#    image: postgres
+#    container_name: db_tenant_1
+#    ports:
+#      - 5435:5432
+#    restart: always
+#    environment:
+#      - POSTGRES_USER=tenant-1-user
+#      - POSTGRES_PASSWORD=tenant-1-password
+#      - POSTGRES_DB=tenant-1-db
+#  multi-tenancy-multi-db-2:
+#    image: postgres
+#    container_name: db_tenant_2
+#    ports:
+#      - 5436:5432
+#    restart: always
+#    environment:
+#      - POSTGRES_USER=tenant-2-user
+#      - POSTGRES_PASSWORD=tenant-2-password
+#      - POSTGRES_DB=tenant-2-db
+#  master-db:
+#    image: postgres
+#    container_name: master_db
+#    ports:
+#      - 5444:5432
+#    restart: always
+#    environment:
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD=password
+#      - POSTGRES_DB=master-db
+###########################################################
+
+version: '3.8'
+
+services:
+  multi-tenancy-single-db:
+    image: postgres
+    container_name: single_db
+    ports:
+      - 5437:5432
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=multitenancy-db
+  master-db:
+    image: postgres
+    container_name: master_db_2
+    ports:
+      - 5444:5432
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=master-db

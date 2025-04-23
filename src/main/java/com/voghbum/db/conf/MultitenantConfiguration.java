@@ -1,6 +1,7 @@
 package com.voghbum.db.conf;
 
-import com.voghbum.db.dbrouting.MultitenantDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -19,6 +20,7 @@ import java.util.Properties;
 
 @Configuration
 public class MultitenantConfiguration {
+    private static final Logger LOG = LoggerFactory.getLogger(MultitenantConfiguration.class);
 
     @Value("${defaultTenant}")
     private String defaultTenant;
@@ -29,6 +31,7 @@ public class MultitenantConfiguration {
         //TODO: bu klasörü resource altına koyduk. Örnekte src ile aynı hierarşideydi. Klasörü bulamayabilir.
         File[] files = Paths.get("tenant_db_configuration").toFile().listFiles();
         Map<Object, Object> resolvedDataSources = new HashMap<>();
+        LOG.info("Found tenant db properties: {}", files);
 
         for (File propertyFile : files) {
             Properties tenantProperties = new Properties();
@@ -44,6 +47,7 @@ public class MultitenantConfiguration {
                 dataSourceBuilder.url(tenantProperties.getProperty("datasource.url"));
                 resolvedDataSources.put(tenantId, dataSourceBuilder.build());
             } catch (IOException exp) {
+                LOG.error("Failed to build dataSource from tenant db conf file {}", propertyFile, exp);
                 throw new RuntimeException("Problem in tenant datasource:" + exp);
             }
         }

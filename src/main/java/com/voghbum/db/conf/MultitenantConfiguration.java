@@ -1,3 +1,4 @@
+/*
 package com.voghbum.db.conf;
 
 import org.slf4j.Logger;
@@ -31,7 +32,7 @@ public class MultitenantConfiguration {
         //TODO: bu klasörü resource altına koyduk. Örnekte src ile aynı hierarşideydi. Klasörü bulamayabilir.
         File[] files = Paths.get("tenant_db_configuration").toFile().listFiles();
         Map<Object, Object> resolvedDataSources = new HashMap<>();
-        LOG.info("Found tenant db properties: {}", files);
+        //LOG.info("Found tenant db properties: {}", files);
 
         for (File propertyFile : files) {
             Properties tenantProperties = new Properties();
@@ -52,7 +53,7 @@ public class MultitenantConfiguration {
             }
         }
 
-        AbstractRoutingDataSource dataSource = new MultitenantDataSource();
+        AbstractRoutingDataSource dataSource = new MultiTenantDataSource();
         dataSource.setDefaultTargetDataSource(resolvedDataSources.get(defaultTenant));
         dataSource.setTargetDataSources(resolvedDataSources);
 
@@ -60,4 +61,4 @@ public class MultitenantConfiguration {
         return dataSource;
     }
 
-}
+}*/

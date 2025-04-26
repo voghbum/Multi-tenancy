@@ -1,4 +1,4 @@
-package com.voghbum.app;
+package com.voghbum.internal;
 
 public class TenantContext {
 
@@ -11,4 +11,6 @@ public class TenantContext {
     public static void setCurrentTenant(String tenant) {
         CURRENT_TENANT.set(tenant);
     }
+
+    public static void unsetCurrentTenant() {CURRENT_TENANT.remove();}
 }

@@ -1,4 +1,4 @@
-package com.voghbum.test;
+package com.voghbum.testpackage;
 
 public class TestClass {
     private final ThreadLocal<String> text = ThreadLocal.withInitial(() -> "");

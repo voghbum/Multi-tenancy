@@ -1,4 +1,4 @@
-package com.voghbum.test;
+package com.voghbum.testpackage;
 
 public class TestMain {
     public static void main(String[] args) {

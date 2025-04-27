@@ -12,9 +12,9 @@ import javax.sql.DataSource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 @Configuration
@@ -26,13 +26,14 @@ public class MultitenantConfiguration {
     @Bean
     @ConfigurationProperties(prefix = "tenants")
     public DataSource dataSource() {
-        //TODO: bu klasörü resource altına koyduk. Örnekte src ile aynı hierarşideydi. Klasörü bulamayabilir.
-        File[] files = Paths.get("tenant_db_configuration").toFile().listFiles();
+        File folder = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("tenant_db_configuration")).getFile());
+        File[] files = folder.listFiles();
+
         Map<Object, Object> resolvedDataSources = new HashMap<>();
 
         for (File propertyFile : files) {
             Properties tenantProperties = new Properties();
-            DataSourceBuilder dataSourceBuilder = DataSourceBuilder.create();
+            DataSourceBuilder<?> dataSourceBuilder = DataSourceBuilder.create();
 
             try {
                 tenantProperties.load(new FileInputStream(propertyFile));

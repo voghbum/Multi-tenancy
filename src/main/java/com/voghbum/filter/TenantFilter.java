@@ -1,6 +1,7 @@
-package com.voghbum.controller;
+package com.voghbum.filter;
 
 import com.voghbum.app.TenantContext;
+import com.voghbum.security.AuthenticationService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.annotation.Order;
@@ -16,14 +17,8 @@ class TenantFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response,
                          FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest req = (HttpServletRequest) request;
-        String tenantName = req.getHeader("X-TenantID");
-        TenantContext.setCurrentTenant(tenantName);
-
-        try {
-            chain.doFilter(request, response);
-        } finally {
-            TenantContext.setCurrentTenant("");
-        }
+        String tenant = AuthenticationService.getTenant((HttpServletRequest) request);
+        TenantContext.setCurrentTenant(tenant);
+        chain.doFilter(request, response);
     }
 }

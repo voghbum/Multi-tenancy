@@ -9,35 +9,26 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfiguration {
     private final AuthenticationConfiguration authenticationConfiguration;
+    private final UserDetailsService userDetailsService;
 
-    public SecurityConfiguration(AuthenticationConfiguration authenticationConfiguration) {
+    public SecurityConfiguration(AuthenticationConfiguration authenticationConfiguration,
+                               UserDetailsService userDetailsService) {
         this.authenticationConfiguration = authenticationConfiguration;
+        this.userDetailsService = userDetailsService;
     }
 
     @Bean
-    public InMemoryUserDetailsManager userDetailsService() {
-        UserDetails user1 = User
-                .withUsername("user")
-                .password(PasswordEncoderFactories.createDelegatingPasswordEncoder().encode("password"))
-                .roles("tenant_1")
-                .build();
-
-        UserDetails user2 = User
-                .withUsername("admin")
-                .password(PasswordEncoderFactories.createDelegatingPasswordEncoder().encode("password"))
-                .roles("tenant_2")
-                .build();
-        return new InMemoryUserDetailsManager(user1, user2);
+    public PasswordEncoder passwordEncoder() {
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
     @Bean

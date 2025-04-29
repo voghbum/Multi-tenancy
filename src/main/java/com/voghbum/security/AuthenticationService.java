@@ -1,70 +1,68 @@
 package com.voghbum.security;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.voghbum.app.TenantContext;
+import com.voghbum.db.master.entity.Tenant;
+import com.voghbum.db.entity.User;
+import com.voghbum.db.master.repository.TenantRepository;
+import com.voghbum.db.repository.UserRepository;
+import com.voghbum.dto.LoginRequest;
+import com.voghbum.dto.LoginResponse;
+import com.voghbum.exception.AuthenticationException;
+import com.voghbum.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.List;
-
+@Service
 public class AuthenticationService {
+    private final UserRepository userRepository;
+    private final TenantRepository tenantRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final HttpServletRequest request;
 
-    private static final long EXPIRATIONTIME = 864_000_00; // 1 day in milliseconds
-    private static final String SECRETKEY = "q3t6w9zCFJNcQfTjWnq3t6w9zCFJNcQfTjWnZr4u7xADGKaPd";
-    private static final SecretKey SIGNINGKEY = Keys.hmacShaKeyFor(SECRETKEY.getBytes(StandardCharsets.UTF_8));
-    private static final String PREFIX = "Bearer";
-
-    public static void addToken(HttpServletResponse res, String username, String tenant) {
-        String JwtToken = Jwts.builder()
-          .subject(username)
-          .audience().add(tenant).and()
-          .issuedAt(new Date(System.currentTimeMillis()))
-          .expiration(new Date(System.currentTimeMillis() + EXPIRATIONTIME))
-          .signWith(SIGNINGKEY)
-          .compact();
-        res.addHeader("Authorization", PREFIX + " " + JwtToken);
+    public AuthenticationService(UserRepository userRepository,
+                               TenantRepository tenantRepository,
+                               PasswordEncoder passwordEncoder,
+                               JwtService jwtService,
+                               HttpServletRequest request) {
+        this.userRepository = userRepository;
+        this.tenantRepository = tenantRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+        this.request = request;
     }
 
-    public static String getTenant(HttpServletRequest req) {
-        String token = req.getHeader("Authorization");
-        if (token == null) {
-            return null;
-        }
-        String tenant = Jwts.parser()
-                .setSigningKey(SIGNINGKEY)
-                .build().parseClaimsJws(token.replace(PREFIX, "").trim())
-                .getBody()
-                .getAudience()
-                .iterator()
-                .next();
-        return tenant;
-    }
-
-    public static Authentication getAuthentication(HttpServletRequest req) {
-        String token = req.getHeader("Authorization");
-        if (token == null) {
-            return null;
+    public LoginResponse login(LoginRequest loginRequest) {
+        String tenantId = request.getHeader("X-Tenant-ID");
+        if (tenantId == null || tenantId.isEmpty()) {
+            throw new AuthenticationException("Tenant ID is required");
         }
 
-        String username = Jwts.parser()
-                .setSigningKey(SIGNINGKEY)
-                .build().parseClaimsJws(token.replace(PREFIX, "").trim())
-                .getBody().getSubject();
+        // Önce master veritabanında tenant'ın varlığını kontrol et
+        tenantRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
 
-        String tenant = Jwts.parser()
-                .setSigningKey(SIGNINGKEY)
-                .build().parseClaimsJws(token.replace(PREFIX, "").trim())
-                .getBody()
-                .getAudience()
-                .iterator()
-                .next();
+        // Tenant'ın veritabanına bağlan
+        TenantContext.setCurrentTenant(tenantId);
 
-        return new UsernamePasswordAuthenticationToken(username, null, List.of(new SimpleGrantedAuthority(tenant)));
+        try {
+            User user = userRepository.findByUsername(loginRequest.getUsername())
+                    .orElseThrow(() -> new AuthenticationException("Invalid username or password"));
+
+            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                throw new AuthenticationException("Invalid username or password");
+            }
+
+            String token = jwtService.generateToken(user, tenantId);
+
+            LoginResponse response = new LoginResponse();
+            response.setToken(token);
+            response.setUsername(user.getUsername());
+
+            return response;
+        } finally {
+            TenantContext.setCurrentTenant(null);
+        }
     }
 }

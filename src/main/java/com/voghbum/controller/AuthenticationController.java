@@ -2,6 +2,7 @@ package com.voghbum.controller;
 
 import com.voghbum.dto.LoginRequest;
 import com.voghbum.dto.LoginResponse;
+import com.voghbum.dto.SignupRequest;
 import com.voghbum.security.AuthenticationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +17,12 @@ public class AuthenticationController {
 
     public AuthenticationController(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<Void> signup(@RequestBody SignupRequest signupRequest) {
+        authenticationService.signup(signupRequest);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/login")

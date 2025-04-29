@@ -7,11 +7,13 @@ import com.voghbum.db.master.repository.TenantRepository;
 import com.voghbum.db.repository.UserRepository;
 import com.voghbum.dto.LoginRequest;
 import com.voghbum.dto.LoginResponse;
+import com.voghbum.dto.SignupRequest;
 import com.voghbum.exception.AuthenticationException;
 import com.voghbum.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthenticationService {
@@ -33,14 +35,46 @@ public class AuthenticationService {
         this.request = request;
     }
 
-    public LoginResponse login(LoginRequest loginRequest) {
-        String tenantId = request.getHeader("X-Tenant-ID");
+    @Transactional
+    public void signup(SignupRequest signupRequest) {
+        String tenantId = request.getHeader("X-TenantID");
         if (tenantId == null || tenantId.isEmpty()) {
             throw new AuthenticationException("Tenant ID is required");
         }
 
         // Önce master veritabanında tenant'ın varlığını kontrol et
-        tenantRepository.findByTenantId(tenantId)
+        Tenant tenant = tenantRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
+
+        // Tenant'ın veritabanına bağlan
+        TenantContext.setCurrentTenant(tenantId);
+
+        try {
+            // Kullanıcı adının benzersiz olup olmadığını kontrol et
+            if (userRepository.findByUsername(signupRequest.getUsername()).isPresent()) {
+                throw new AuthenticationException("Username already exists");
+            }
+
+            // Yeni kullanıcı oluştur
+            User user = new User();
+            user.setUsername(signupRequest.getUsername());
+            user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
+
+            // Kullanıcıyı kaydet
+            userRepository.save(user);
+        } finally {
+            TenantContext.setCurrentTenant(null);
+        }
+    }
+
+    public LoginResponse login(LoginRequest loginRequest) {
+        String tenantId = request.getHeader("X-TenantID");
+        if (tenantId == null || tenantId.isEmpty()) {
+            throw new AuthenticationException("Tenant ID is required");
+        }
+
+        // Önce master veritabanında tenant'ın varlığını kontrol et
+        Tenant tenant = tenantRepository.findByTenantId(tenantId)
                 .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
 
         // Tenant'ın veritabanına bağlan

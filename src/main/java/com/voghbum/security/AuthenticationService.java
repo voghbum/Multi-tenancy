@@ -68,17 +68,15 @@ public class AuthenticationService {
     }
 
     public LoginResponse login(LoginRequest loginRequest) {
-        String tenantId = request.getHeader("X-TenantID");
+        //String tenantId = request.getHeader("X-TenantID");
+        String tenantId = TenantContext.getCurrentTenant();
         if (tenantId == null || tenantId.isEmpty()) {
             throw new AuthenticationException("Tenant ID is required");
         }
 
         // Önce master veritabanında tenant'ın varlığını kontrol et
-        Tenant tenant = tenantRepository.findByTenantId(tenantId)
+        tenantRepository.findByTenantId(tenantId)
                 .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
-
-        // Tenant'ın veritabanına bağlan
-        TenantContext.setCurrentTenant(tenantId);
 
         try {
             User user = userRepository.findByUsername(loginRequest.getUsername())

@@ -1,7 +1,6 @@
 package com.voghbum.app;
 
 public class TenantContext {
-
     private static final ThreadLocal<String> CURRENT_TENANT = new ThreadLocal<>();
 
     public static String getCurrentTenant() {

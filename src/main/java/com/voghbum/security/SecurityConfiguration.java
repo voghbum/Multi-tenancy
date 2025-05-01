@@ -17,15 +17,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 public class SecurityConfiguration {
-    private final AuthenticationConfiguration authenticationConfiguration;
-    private final UserDetailsService userDetailsService;
     private final AuthenticationFilter authenticationFilter;
 
-    public SecurityConfiguration(AuthenticationConfiguration authenticationConfiguration,
-                               UserDetailsService userDetailsService,
-                               AuthenticationFilter authenticationFilter) {
-        this.authenticationConfiguration = authenticationConfiguration;
-        this.userDetailsService = userDetailsService;
+    public SecurityConfiguration(AuthenticationFilter authenticationFilter) {
         this.authenticationFilter = authenticationFilter;
     }
 
@@ -36,7 +30,6 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        var authenticationManager = authenticationConfiguration.getAuthenticationManager();
         http
                 .authorizeHttpRequests(authorize ->
                         authorize.requestMatchers("/api/auth/login", "/api/auth/signup").permitAll()

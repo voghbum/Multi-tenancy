@@ -11,28 +11,39 @@ import com.voghbum.dto.SignupRequest;
 import com.voghbum.exception.AuthenticationException;
 import com.voghbum.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthenticationService {
-    private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final HttpServletRequest request;
+    private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final CustomUserDetailsService userDetailsService;
 
-    public AuthenticationService(UserRepository userRepository,
-                               TenantRepository tenantRepository,
-                               PasswordEncoder passwordEncoder,
-                               JwtService jwtService,
-                               HttpServletRequest request) {
-        this.userRepository = userRepository;
+    public AuthenticationService(
+            TenantRepository tenantRepository,
+            AuthenticationManager authenticationManager,
+            JwtService jwtService,
+            HttpServletRequest request,
+            PasswordEncoder passwordEncoder,
+            UserRepository userRepository,
+            CustomUserDetailsService userDetailsService) {
         this.tenantRepository = tenantRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.request = request;
+        this.passwordEncoder = passwordEncoder;
+        this.userRepository = userRepository;
+        this.userDetailsService = userDetailsService;
     }
 
     @Transactional
@@ -41,25 +52,26 @@ public class AuthenticationService {
         if (tenantId == null || tenantId.isEmpty()) {
             throw new AuthenticationException("Tenant ID is required");
         }
+
         tenantRepository.findByTenantId(tenantId)
                 .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
+
         try {
-            if (userRepository.findByUsername(signupRequest.getUsername()).isPresent()) {
+            if (userDetailsService.userExists(signupRequest.getUsername())) {
                 throw new AuthenticationException("Username already exists");
             }
 
-            User user = new User();
-            user.setUsername(signupRequest.getUsername());
-            user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
-
-            userRepository.save(user);
+            userDetailsService.createUser(
+                signupRequest.getUsername(),
+                passwordEncoder.encode(signupRequest.getPassword())
+            );
         } finally {
             TenantContext.setCurrentTenant(null);
         }
     }
 
     public LoginResponse login(LoginRequest loginRequest) {
-        String tenantId = TenantContext.getCurrentTenant();
+        String tenantId = request.getHeader("X-TenantID");
         if (tenantId == null || tenantId.isEmpty()) {
             throw new AuthenticationException("Tenant ID is required");
         }
@@ -68,18 +80,20 @@ public class AuthenticationService {
                 .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
 
         try {
-            User user = userRepository.findByUsername(loginRequest.getUsername())
-                    .orElseThrow(() -> new AuthenticationException("Invalid username or password"));
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    loginRequest.getUsername(),
+                    loginRequest.getPassword()
+                )
+            );
 
-            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-                throw new AuthenticationException("Invalid username or password");
-            }
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-            String token = jwtService.generateToken(user, tenantId);
+            String token = jwtService.generateToken(userDetails, tenantId);
 
             LoginResponse response = new LoginResponse();
             response.setToken(token);
-            response.setUsername(user.getUsername());
+            response.setUsername(userDetails.getUsername());
 
             return response;
         } finally {

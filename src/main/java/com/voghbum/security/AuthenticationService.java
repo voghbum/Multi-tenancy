@@ -41,26 +41,17 @@ public class AuthenticationService {
         if (tenantId == null || tenantId.isEmpty()) {
             throw new AuthenticationException("Tenant ID is required");
         }
-
-        // Önce master veritabanında tenant'ın varlığını kontrol et
-        Tenant tenant = tenantRepository.findByTenantId(tenantId)
+        tenantRepository.findByTenantId(tenantId)
                 .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
-
-        // Tenant'ın veritabanına bağlan
-        TenantContext.setCurrentTenant(tenantId);
-
         try {
-            // Kullanıcı adının benzersiz olup olmadığını kontrol et
             if (userRepository.findByUsername(signupRequest.getUsername()).isPresent()) {
                 throw new AuthenticationException("Username already exists");
             }
 
-            // Yeni kullanıcı oluştur
             User user = new User();
             user.setUsername(signupRequest.getUsername());
             user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
 
-            // Kullanıcıyı kaydet
             userRepository.save(user);
         } finally {
             TenantContext.setCurrentTenant(null);
@@ -68,13 +59,11 @@ public class AuthenticationService {
     }
 
     public LoginResponse login(LoginRequest loginRequest) {
-        //String tenantId = request.getHeader("X-TenantID");
         String tenantId = TenantContext.getCurrentTenant();
         if (tenantId == null || tenantId.isEmpty()) {
             throw new AuthenticationException("Tenant ID is required");
         }
 
-        // Önce master veritabanında tenant'ın varlığını kontrol et
         tenantRepository.findByTenantId(tenantId)
                 .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
 

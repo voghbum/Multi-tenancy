@@ -2,7 +2,6 @@ package com.voghbum.app;
 
 import com.voghbum.app.tenantresolver.TenantResolver;
 import jakarta.servlet.ServletRequest;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

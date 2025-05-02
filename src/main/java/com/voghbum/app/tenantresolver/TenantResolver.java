@@ -1,7 +1,6 @@
 package com.voghbum.app.tenantresolver;
 
 import jakarta.servlet.ServletRequest;
-import jakarta.servlet.http.HttpServletRequest;
 
 public abstract class TenantResolver {
     private TenantResolver next;

@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.flywaydb.core.Flyway;
 
 @Configuration
 @EnableTransactionManagement
@@ -93,6 +94,7 @@ public class MultitenantConfiguration {
     public void registerNewTenant(Tenant tenant) {
         tenantRepository.save(tenant);
         addDataSource(tenant);
+        migrateTenantDatabase(tenant);
     }
 
     @Transactional
@@ -123,5 +125,13 @@ public class MultitenantConfiguration {
         dataSource.setPassword(tenant.getPassword());
         
         return dataSource;
+    }
+
+    private void migrateTenantDatabase(Tenant tenant) {
+        Flyway flyway = Flyway.configure()
+            .dataSource(tenant.getUrl(), tenant.getUsername(), tenant.getPassword())
+            .locations("classpath:db/migration/tenantdb")
+            .load();
+        flyway.migrate();
     }
 }

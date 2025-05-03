@@ -12,6 +12,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.flywaydb.core.Flyway;
 
 import javax.sql.DataSource;
 import java.util.Properties;
@@ -70,5 +71,16 @@ public class MasterDataSourceConfiguration {
     public PlatformTransactionManager masterTransactionManager(
             @Qualifier("masterEntityManagerFactory") LocalContainerEntityManagerFactoryBean masterEntityManagerFactory) {
         return new JpaTransactionManager(masterEntityManagerFactory.getObject());
+    }
+
+    @Bean(name = "masterFlyway")
+    public Flyway masterFlyway(@Qualifier("masterDataSource") DataSource masterDataSource) {
+        Flyway flyway = Flyway.configure()
+                .dataSource(masterDataSource)
+                .locations("classpath:db/migration/master")
+                .baselineOnMigrate(true)
+                .load();
+        flyway.migrate();
+        return flyway;
     }
 } 

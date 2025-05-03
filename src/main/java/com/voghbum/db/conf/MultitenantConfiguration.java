@@ -3,7 +3,6 @@ package com.voghbum.db.conf;
 import com.voghbum.db.dbrouting.MultitenantDataSource;
 import com.voghbum.db.master.entity.Tenant;
 import com.voghbum.db.master.repository.TenantRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -17,9 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import org.flywaydb.core.Flyway;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Configuration
 @EnableTransactionManagement
@@ -29,16 +29,13 @@ import org.flywaydb.core.Flyway;
         transactionManagerRef = "tenantTransactionManager"
 )
 public class MultitenantConfiguration {
-
-    @Value("${defaultTenant}")
-    private String defaultTenant;
-
     private final TenantRepository tenantRepository;
     private final MultitenantDataSource multitenantDataSource;
 
-    public MultitenantConfiguration(TenantRepository tenantRepository) {
+    @Autowired
+    public MultitenantConfiguration(TenantRepository tenantRepository, MultitenantDataSource multitenantDataSource) {
         this.tenantRepository = tenantRepository;
-        this.multitenantDataSource = new MultitenantDataSource();
+        this.multitenantDataSource = multitenantDataSource;
     }
 
     @Bean
@@ -46,17 +43,16 @@ public class MultitenantConfiguration {
         // Initialize tenant data sources from master database
         initializeTenantDataSources();
 
-        // Set default data source
-        Tenant defaultTenantEntity = tenantRepository.findByTenantId(defaultTenant)
-                .orElseThrow(() -> new RuntimeException("Default tenant not found: " + defaultTenant));
-        
-        // Create default data source
-        Map<Object, Object> targetDataSources = new HashMap<>();
-        targetDataSources.put(defaultTenant, createDataSource(defaultTenantEntity));
-        
-        multitenantDataSource.setDefaultTargetDataSource(targetDataSources.get(defaultTenant));
-        multitenantDataSource.afterPropertiesSet();
-        
+        // Set default data source to empty H2
+        DriverManagerDataSource h2DataSource = new DriverManagerDataSource();
+        h2DataSource.setDriverClassName("org.h2.Driver");
+        h2DataSource.setUrl("jdbc:h2:mem:empty;DB_CLOSE_DELAY=-1");
+        h2DataSource.setUsername("sa");
+        h2DataSource.setPassword("");
+
+        multitenantDataSource.setDefaultDataSource(h2DataSource);
+        multitenantDataSource.finalizeDataSources();
+
         return multitenantDataSource;
     }
 
@@ -83,6 +79,9 @@ public class MultitenantConfiguration {
     @Transactional
     public void initializeTenantDataSources() {
         List<Tenant> tenants = tenantRepository.findAll();
+        if(tenants.isEmpty()) {
+            multitenantDataSource.setTargetDataSources(new HashMap<>());
+        }
         for (Tenant tenant : tenants) {
             if (!multitenantDataSource.containsDataSource(tenant.getTenantId())) {
                 addDataSource(tenant);
@@ -106,25 +105,12 @@ public class MultitenantConfiguration {
     }
 
     private void addDataSource(Tenant tenant) {
-        multitenantDataSource.addDataSource(
-            tenant.getTenantId(),
-            tenant.getDriverClassName(),
-            tenant.getUrl(),
-            tenant.getUsername(),
-            tenant.getPassword()
-        );
-    }
-
-    private DataSource createDataSource(Tenant tenant) {
-        org.springframework.jdbc.datasource.DriverManagerDataSource dataSource = 
-            new org.springframework.jdbc.datasource.DriverManagerDataSource();
-        
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName(tenant.getDriverClassName());
         dataSource.setUrl(tenant.getUrl());
         dataSource.setUsername(tenant.getUsername());
         dataSource.setPassword(tenant.getPassword());
-        
-        return dataSource;
+        multitenantDataSource.addDataSource(tenant.getTenantId(), dataSource);
     }
 
     private void migrateTenantDatabase(Tenant tenant) {

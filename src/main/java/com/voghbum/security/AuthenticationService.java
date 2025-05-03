@@ -26,7 +26,6 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final HttpServletRequest request;
     private final PasswordEncoder passwordEncoder;
-    private final UserRepository userRepository;
     private final CustomUserDetailsService userDetailsService;
 
     public AuthenticationService(
@@ -35,14 +34,12 @@ public class AuthenticationService {
             JwtService jwtService,
             HttpServletRequest request,
             PasswordEncoder passwordEncoder,
-            UserRepository userRepository,
             CustomUserDetailsService userDetailsService) {
         this.tenantRepository = tenantRepository;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.request = request;
         this.passwordEncoder = passwordEncoder;
-        this.userRepository = userRepository;
         this.userDetailsService = userDetailsService;
     }
 

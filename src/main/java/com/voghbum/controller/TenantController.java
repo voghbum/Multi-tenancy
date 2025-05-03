@@ -11,6 +11,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/tenant")
 public class TenantController {
+
     private final TenantRepository tenantRepository;
     private final MultitenantConfiguration multitenantConfiguration;
 

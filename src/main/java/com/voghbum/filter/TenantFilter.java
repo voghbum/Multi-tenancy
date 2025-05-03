@@ -15,8 +15,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-@Order(1)
-class TenantFilter implements Filter {
+public class TenantFilter implements Filter {
     private final TenantFinder tenantFinder;
     private final Logger logger = LoggerFactory.getLogger(TenantFilter.class);
 

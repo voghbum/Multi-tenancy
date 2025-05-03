@@ -1,6 +1,7 @@
 package com.voghbum.security;
 
 import com.voghbum.filter.AuthenticationFilter;
+import com.voghbum.filter.TenantFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,9 +19,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfiguration {
     private final AuthenticationFilter authenticationFilter;
+    private final TenantFilter tenantFilter;
 
-    public SecurityConfiguration(AuthenticationFilter authenticationFilter) {
+    public SecurityConfiguration(AuthenticationFilter authenticationFilter, TenantFilter tenantFilter) {
         this.authenticationFilter = authenticationFilter;
+        this.tenantFilter = tenantFilter;
     }
 
     @Bean
@@ -37,13 +40,14 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorize ->
-                        authorize.requestMatchers("/api/auth/login", "/api/auth/signup").permitAll()
+                        authorize.requestMatchers("/api/auth/login", "/api/auth/signup", "/api/tenant/**").permitAll()
                                 .anyRequest().authenticated())
                 .sessionManagement(securityContext -> securityContext.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(AbstractHttpConfigurer::disable)
                 .headers(header -> header.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
+                .addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

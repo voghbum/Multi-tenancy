@@ -3,6 +3,8 @@ package com.voghbum.db.conf;
 import com.voghbum.db.dbrouting.MultitenantDataSource;
 import com.voghbum.db.master.entity.Tenant;
 import com.voghbum.db.master.repository.TenantRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -14,6 +16,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -29,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
         transactionManagerRef = "tenantTransactionManager"
 )
 public class MultitenantConfiguration {
+    private final Logger logger = LoggerFactory.getLogger(MultitenantDataSource.class);
     private final TenantRepository tenantRepository;
     private final MultitenantDataSource multitenantDataSource;
 
@@ -79,20 +84,30 @@ public class MultitenantConfiguration {
     @Transactional
     public void initializeTenantDataSources() {
         List<Tenant> tenants = tenantRepository.findAll();
-        if(tenants.isEmpty()) {
-            multitenantDataSource.setTargetDataSources(new HashMap<>());
-        }
         for (Tenant tenant : tenants) {
-            if (!multitenantDataSource.containsDataSource(tenant.getTenantId())) {
-                addDataSource(tenant);
+            if(!checkConnection(tenant)) {
+                continue;
             }
+            migrateTenantDatabase(tenant);
+            if (!multitenantDataSource.containsDataSource(tenant.getTenantId())) {
+                multitenantDataSource.addDataSource(tenant.getTenantId(), prepareDataSource(tenant));
+            }
+        }
+    }
+
+    private boolean checkConnection(Tenant tenant) {
+        DriverManagerDataSource dataSource = prepareDataSource(tenant);
+        try (Connection connection = dataSource.getConnection()) {
+            return !connection.isClosed();
+        } catch (SQLException ignored) {
+            return false;
         }
     }
 
     @Transactional
     public void registerNewTenant(Tenant tenant) {
         tenantRepository.save(tenant);
-        addDataSource(tenant);
+        multitenantDataSource.addDataSource(tenant.getTenantId(), prepareDataSource(tenant));
         migrateTenantDatabase(tenant);
     }
 
@@ -104,20 +119,21 @@ public class MultitenantConfiguration {
         });
     }
 
-    private void addDataSource(Tenant tenant) {
-        DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName(tenant.getDriverClassName());
-        dataSource.setUrl(tenant.getUrl());
-        dataSource.setUsername(tenant.getUsername());
-        dataSource.setPassword(tenant.getPassword());
-        multitenantDataSource.addDataSource(tenant.getTenantId(), dataSource);
-    }
-
     private void migrateTenantDatabase(Tenant tenant) {
+        logger.info("Migrating db with flyway: {}", tenant);
         Flyway flyway = Flyway.configure()
             .dataSource(tenant.getUrl(), tenant.getUsername(), tenant.getPassword())
             .locations("classpath:db/migration/tenantdb")
             .load();
         flyway.migrate();
+    }
+
+    private DriverManagerDataSource prepareDataSource(Tenant tenant) {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName(tenant.getDriverClassName());
+        dataSource.setUrl(tenant.getUrl());
+        dataSource.setUsername(tenant.getUsername());
+        dataSource.setPassword(tenant.getPassword());
+        return dataSource;
     }
 }

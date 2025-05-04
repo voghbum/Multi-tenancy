@@ -71,4 +71,15 @@ public class Tenant {
     public void setPassword(String password) {
         this.password = password;
     }
-} 
+
+    @Override
+    public String toString() {
+        return "Tenant{" +
+                "tenantId='" + tenantId + '\'' +
+                ", driverClassName='" + driverClassName + '\'' +
+                ", url='" + url + '\'' +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                '}';
+    }
+}

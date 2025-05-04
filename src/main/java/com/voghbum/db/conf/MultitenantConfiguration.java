@@ -51,7 +51,7 @@ public class MultitenantConfiguration {
         h2DataSource.setPassword("");
 
         multitenantDataSource.setDefaultDataSource(h2DataSource);
-        multitenantDataSource.finalizeDataSources();
+        multitenantDataSource.afterPropertiesSet();
 
         return multitenantDataSource;
     }

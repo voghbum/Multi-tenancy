@@ -5,15 +5,18 @@ import com.voghbum.db.master.entity.Tenant;
 import com.voghbum.db.master.repository.TenantRepository;
 import com.voghbum.service.TenantDatabaseProvisionService;
 import com.voghbum.dto.TenantCreateRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api/tenant")
 public class TenantController {
-
+    Logger logger = LoggerFactory.getLogger(EmployeeController.class);
     private final TenantRepository tenantRepository;
     private final MultitenantConfiguration multitenantConfiguration;
     private final TenantDatabaseProvisionService tenantDatabaseProvisionService;
@@ -31,13 +34,11 @@ public class TenantController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Tenant> createTenant(@RequestBody TenantCreateRequest request) {
-        boolean started = tenantDatabaseProvisionService.provisionDatabaseForTenant(
+    public ResponseEntity<String> createTenant(@RequestBody TenantCreateRequest request) throws ExecutionException, InterruptedException {
+        logger.info("new tenant coming: {}", request.getTenantId());
+        var status = tenantDatabaseProvisionService.provisionDatabaseForTenant(
             request.getDbName(), request.getPort(), request.getDbUser(), request.getDbPassword()
         );
-        if (!started) {
-            return ResponseEntity.status(500).body(null); // veya uygun bir hata mesajı
-        }
 
         Tenant tenant = new Tenant();
         tenant.setTenantId(request.getTenantId());
@@ -46,9 +47,14 @@ public class TenantController {
         tenant.setUsername(request.getDbUser());
         tenant.setPassword(request.getDbPassword());
 
-        Tenant savedTenant = tenantRepository.save(tenant);
-        multitenantConfiguration.registerNewTenant(savedTenant);
-        return ResponseEntity.ok(savedTenant);
+        status.thenAccept((stat) -> {
+            if(stat) {
+                Tenant savedTenant = tenantRepository.save(tenant);
+                multitenantConfiguration.registerNewTenant(savedTenant);
+            }
+        });
+
+        return ResponseEntity.accepted().body("Tenant provisioning started. Check status later.");
     }
 
     @DeleteMapping("/remove")

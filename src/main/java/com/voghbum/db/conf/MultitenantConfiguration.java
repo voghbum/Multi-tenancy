@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import org.flywaydb.core.Flyway;
@@ -45,10 +44,8 @@ public class MultitenantConfiguration {
 
     @Bean
     public DataSource dataSource() {
-        // Initialize tenant data sources from master database
         initializeTenantDataSources();
 
-        // Set default data source to empty H2
         DriverManagerDataSource h2DataSource = new DriverManagerDataSource();
         h2DataSource.setDriverClassName("org.h2.Driver");
         h2DataSource.setUrl("jdbc:h2:mem:empty;DB_CLOSE_DELAY=-1");

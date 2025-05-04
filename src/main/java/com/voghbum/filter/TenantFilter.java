@@ -20,7 +20,7 @@ import java.io.IOException;
 public class TenantFilter extends OncePerRequestFilter {
     private final TenantFinder tenantFinder;
     private final Logger logger = LoggerFactory.getLogger(TenantFilter.class);
-    
+
     public TenantFilter(TenantFinder tenantFinder) {
         this.tenantFinder = tenantFinder;
     }

@@ -1,6 +1,6 @@
-package com.voghbum.db.repository;
+package com.voghbum.db.tenant.repository;
 
-import com.voghbum.db.entity.User;
+import com.voghbum.db.tenant.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

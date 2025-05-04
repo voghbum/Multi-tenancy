@@ -1,10 +1,7 @@
 package com.voghbum.security;
 
 import com.voghbum.app.TenantContext;
-import com.voghbum.db.master.entity.Tenant;
-import com.voghbum.db.entity.User;
 import com.voghbum.db.master.repository.TenantRepository;
-import com.voghbum.db.repository.UserRepository;
 import com.voghbum.dto.LoginRequest;
 import com.voghbum.dto.LoginResponse;
 import com.voghbum.dto.SignupRequest;

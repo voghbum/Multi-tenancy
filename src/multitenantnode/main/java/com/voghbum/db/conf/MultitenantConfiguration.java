@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(
-        basePackages = "com.voghbum.db.repository",
+        basePackages = "com.voghbum.db.tenant.repository",
         entityManagerFactoryRef = "tenantEntityManagerFactory",
         transactionManagerRef = "tenantTransactionManager"
 )
@@ -62,7 +62,7 @@ public class MultitenantConfiguration {
     public LocalContainerEntityManagerFactoryBean tenantEntityManagerFactory() {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource());
-        em.setPackagesToScan("com.voghbum.db.entity");
+        em.setPackagesToScan("com.voghbum.db.tenant.entity");
         em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
         
         Properties properties = new Properties();

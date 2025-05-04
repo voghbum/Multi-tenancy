@@ -26,7 +26,7 @@ public class TenantDatabaseProvisionService {
             ProcessBuilder pb = new ProcessBuilder(
                 "docker", "compose", "-p", containerName, "up", "-d"
             );
-            pb.directory(new java.io.File(".")); // make sure it runs in project root
+            pb.directory(new java.io.File("."));
             pb.environment().put("CONTAINER_NAME", containerName);
             pb.environment().put("POSTGRES_DB", dbName);
             pb.environment().put("POSTGRES_USER", user);

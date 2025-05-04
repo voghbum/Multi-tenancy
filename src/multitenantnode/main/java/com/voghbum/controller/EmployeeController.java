@@ -1,7 +1,7 @@
 package com.voghbum.controller;
 
-import com.voghbum.db.entity.Employee;
-import com.voghbum.db.repository.EmployeeRepository;
+import com.voghbum.db.tenant.entity.Employee;
+import com.voghbum.db.tenant.repository.EmployeeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

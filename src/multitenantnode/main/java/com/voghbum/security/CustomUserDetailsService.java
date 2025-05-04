@@ -1,7 +1,7 @@
 package com.voghbum.security;
 
-import com.voghbum.db.entity.User;
-import com.voghbum.db.repository.UserRepository;
+import com.voghbum.db.tenant.entity.User;
+import com.voghbum.db.tenant.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

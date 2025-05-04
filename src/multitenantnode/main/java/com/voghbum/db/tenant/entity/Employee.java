@@ -1,4 +1,4 @@
-package com.voghbum.db.entity;
+package com.voghbum.db.tenant.entity;
 
 import jakarta.persistence.*;
 

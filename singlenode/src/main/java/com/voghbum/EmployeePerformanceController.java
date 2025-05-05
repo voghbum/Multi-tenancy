@@ -6,22 +6,25 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Random;
+
 @RestController
 @RequestMapping("/api")
-public class DummyController {
-    Logger logger = LoggerFactory.getLogger(DummyController.class);
+public class EmployeePerformanceController {
+    Logger logger = LoggerFactory.getLogger(EmployeePerformanceController.class);
+    private final Random random = new Random();
 
-    public DummyController() {
+    public EmployeePerformanceController() {
     }
 
-    @GetMapping("/process")
-    public ResponseEntity<Void> signup(@RequestParam String id) {
+    @GetMapping("/performance/rating")
+    public ResponseEntity<Integer> signup(@RequestParam String id) {
         logger.info("request with id: {}", id);
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(random.nextInt(100));
     }
 } 

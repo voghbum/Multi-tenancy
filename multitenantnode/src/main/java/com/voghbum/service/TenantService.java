@@ -35,7 +35,7 @@ public class TenantService {
                     tenant.setUrl("jdbc:postgresql://localhost:" + dbPort + "/" + request.getDbName());
                     tenant.setUsername(request.getDbUser());
                     tenant.setPassword(request.getDbPassword());
-                    tenant.setSingleNodeEndpoint("http://localhost:" + singleNodePort + "/api/process");
+                    tenant.setSingleNodeEndpoint("http://localhost:" + singleNodePort + "api/performance/rating");
                     return tenant;
                 })
                 .thenAccept(multitenantConfiguration::registerNewTenant)

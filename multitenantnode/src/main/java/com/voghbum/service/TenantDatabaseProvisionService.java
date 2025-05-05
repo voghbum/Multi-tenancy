@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.BufferedReader;
 import java.util.concurrent.CompletableFuture;
+import java.net.ServerSocket;
 
 @Configuration
 @EnableAsync
@@ -26,7 +27,7 @@ public class TenantDatabaseProvisionService {
             ProcessBuilder pb = new ProcessBuilder(
                 "docker", "compose", "-p", containerName, "up", "-d"
             );
-            pb.directory(new java.io.File("."));
+            pb.directory(new java.io.File("multitenantnode/"));
             pb.environment().put("CONTAINER_NAME", containerName);
             pb.environment().put("POSTGRES_DB", dbName);
             pb.environment().put("POSTGRES_USER", user);
@@ -68,5 +69,43 @@ public class TenantDatabaseProvisionService {
         }
         logger.info("container cannot healthy");
         return false;
+    }
+
+    /**
+     * Finds a random available port on the system.
+     */
+    public int findRandomAvailablePort() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            socket.setReuseAddress(true);
+            return socket.getLocalPort();
+        } catch (Exception e) {
+            logger.error("Could not find an available port", e);
+            throw new RuntimeException("No available port found");
+        }
+    }
+
+    /**
+     * Runs the singlenode-app docker container on the given port.
+     */
+    @Async
+    public CompletableFuture<Boolean> runSingleNodeAppContainer() {
+        int port = findRandomAvailablePort();
+        logger.info("Running singlenode-app container on port {}", port);
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker", "run", "-e", "PORT=" + port, "-p", port + ":9090", "singlenode-app"
+            );
+            pb.inheritIO();
+            Process process = pb.start();
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                logger.error("singlenode-app container could not be started!");
+                return CompletableFuture.completedFuture(false);
+            }
+            return CompletableFuture.completedFuture(true);
+        } catch (Exception e) {
+            logger.error("singlenode-app container could not be started!", e);
+            return CompletableFuture.completedFuture(false);
+        }
     }
 } 

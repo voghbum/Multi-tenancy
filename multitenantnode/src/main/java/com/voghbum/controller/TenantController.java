@@ -5,6 +5,7 @@ import com.voghbum.db.master.entity.Tenant;
 import com.voghbum.db.master.repository.TenantRepository;
 import com.voghbum.service.TenantDatabaseProvisionService;
 import com.voghbum.dto.TenantCreateRequest;
+import com.voghbum.service.TenantService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -16,16 +17,16 @@ import java.util.concurrent.ExecutionException;
 @RestController
 @RequestMapping("/api/tenant")
 public class TenantController {
-    Logger logger = LoggerFactory.getLogger(EmployeeController.class);
+    Logger logger = LoggerFactory.getLogger(TenantController.class);
     private final TenantRepository tenantRepository;
     private final MultitenantConfiguration multitenantConfiguration;
-    private final TenantDatabaseProvisionService tenantDatabaseProvisionService;
+    private final TenantService tenantService;
 
     public TenantController(TenantRepository tenantRepository, MultitenantConfiguration multitenantConfiguration,
-                            TenantDatabaseProvisionService tenantDatabaseProvisionService) {
+                            TenantService tenantService) {
         this.tenantRepository = tenantRepository;
         this.multitenantConfiguration = multitenantConfiguration;
-        this.tenantDatabaseProvisionService = tenantDatabaseProvisionService;
+        this.tenantService = tenantService;
     }
 
     @GetMapping("/all")
@@ -34,26 +35,8 @@ public class TenantController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<String> createTenant(@RequestBody TenantCreateRequest request) throws ExecutionException, InterruptedException {
-        logger.info("new tenant coming: {}", request.getTenantId());
-        var status = tenantDatabaseProvisionService.provisionDatabaseForTenant(
-            request.getDbName(), request.getPort(), request.getDbUser(), request.getDbPassword()
-        );
-
-        Tenant tenant = new Tenant();
-        tenant.setTenantId(request.getTenantId());
-        tenant.setDriverClassName("org.postgresql.Driver");
-        tenant.setUrl("jdbc:postgresql://localhost:" + request.getPort() + "/" + request.getDbName());
-        tenant.setUsername(request.getDbUser());
-        tenant.setPassword(request.getDbPassword());
-
-        status.thenAccept((stat) -> {
-            if(stat) {
-                Tenant savedTenant = tenantRepository.save(tenant);
-                multitenantConfiguration.registerNewTenant(savedTenant);
-            }
-        });
-
+    public ResponseEntity<String> createTenant(@RequestBody TenantCreateRequest request) {
+        tenantService.createNewTenantStack(request);
         return ResponseEntity.accepted().body("Tenant provisioning started. Check status later.");
     }
 

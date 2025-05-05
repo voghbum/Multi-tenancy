@@ -20,9 +20,10 @@ public class TenantDatabaseProvisionService {
     private final Logger logger = LoggerFactory.getLogger(TenantDatabaseProvisionService.class);
 
     @Async
-    public CompletableFuture<Boolean> provisionDatabaseForTenant(String dbName, int port, String user, String password) {
+    public CompletableFuture<Integer> provisionDatabaseForTenant(String dbName, String user, String password) {
         logger.info("creating new postgresql container with docker compose...");
         try {
+            int port = findRandomAvailablePort();
             String containerName = dbName;
             ProcessBuilder pb = new ProcessBuilder(
                 "docker", "compose", "-p", containerName, "up", "-d"
@@ -38,13 +39,16 @@ public class TenantDatabaseProvisionService {
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 logger.error("tenant db container cannot be created!");
-                return CompletableFuture.completedFuture(false);
+                throw new RuntimeException("tenant db container cannot be created!");
             }
             boolean healthy = waitForContainerHealthy(containerName, 200); // 200 seconds timeout
-            return CompletableFuture.completedFuture(healthy);
+            if (!healthy) {
+                throw new RuntimeException("tenant db container is not healthy!");
+            }
+            return CompletableFuture.completedFuture(port);
         } catch (Exception e) {
             logger.error("tenant db container cannot be created!", e);
-            return CompletableFuture.completedFuture(false);
+            throw new RuntimeException("tenant db container cannot be created!", e);
         }
     }
 
@@ -88,24 +92,29 @@ public class TenantDatabaseProvisionService {
      * Runs the singlenode-app docker container on the given port.
      */
     @Async
-    public CompletableFuture<Boolean> runSingleNodeAppContainer() {
+    public CompletableFuture<Integer> runSingleNodeAppContainer(String tenantId) {
         int port = findRandomAvailablePort();
-        logger.info("Running singlenode-app container on port {}", port);
+        String containerName = "singlenode-" + tenantId;
+        logger.info("Running singlenode-app container for tenant {} on port {}", tenantId, port);
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                "docker", "run", "-e", "PORT=" + port, "-p", port + ":9090", "singlenode-app"
+                "docker", "run", "-d", "--name", containerName, "-e", "PORT=" + port, "-p", port + ":9090", "singlenode-app"
             );
             pb.inheritIO();
             Process process = pb.start();
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 logger.error("singlenode-app container could not be started!");
-                return CompletableFuture.completedFuture(false);
+                throw new RuntimeException("singlenode-app container could not be started!");
             }
-            return CompletableFuture.completedFuture(true);
+            boolean healthy = waitForContainerHealthy(containerName, 120); // 120 saniye timeout
+            if (!healthy) {
+                throw new RuntimeException("singlenode-app container is not healthy!");
+            }
+            return CompletableFuture.completedFuture(port);
         } catch (Exception e) {
             logger.error("singlenode-app container could not be started!", e);
-            return CompletableFuture.completedFuture(false);
+            throw new RuntimeException("singlenode-app container could not be started!", e);
         }
     }
 } 

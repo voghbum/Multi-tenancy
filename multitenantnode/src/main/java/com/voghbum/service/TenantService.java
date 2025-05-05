@@ -12,38 +12,36 @@ import org.springframework.stereotype.Service;
 public class TenantService {
     private final Logger logger = LoggerFactory.getLogger(TenantService.class);
     private final TenantDatabaseProvisionService tenantDatabaseProvisionService;
-    private final TenantRepository tenantRepository;
     private final MultitenantConfiguration multitenantConfiguration;
 
-    public TenantService(TenantDatabaseProvisionService tenantDatabaseProvisionService, TenantRepository tenantRepository, MultitenantConfiguration multitenantConfiguration) {
+    public TenantService(TenantDatabaseProvisionService tenantDatabaseProvisionService, MultitenantConfiguration multitenantConfiguration) {
         this.tenantDatabaseProvisionService = tenantDatabaseProvisionService;
-        this.tenantRepository = tenantRepository;
         this.multitenantConfiguration = multitenantConfiguration;
     }
 
     public void createNewTenantStack(TenantCreateRequest request) {
         logger.info("Creating new tenant stack for tenant: {}", request.getTenantId());
+
         tenantDatabaseProvisionService.provisionDatabaseForTenant(request.getDbName(),
-                request.getPort(), request.getDbUser(), request.getDbPassword())
-                .thenCompose(state -> {
-                    if(!state) {
-                        logger.error("Tenant creation failed in db creating stage!");
-                        throw new RuntimeException("Tenant creation failed in db creating stage!");
-                    }
-                    return tenantDatabaseProvisionService.runSingleNodeAppContainer();
-                }).thenApply((state) -> {
-                    if(!state) {
-                        logger.error("Tenant creation failed in singleNode creating stage!");
-                        throw new RuntimeException("Tenant creation failed in db creating stage!");
-                    }
+                request.getDbUser(), request.getDbPassword())
+                .thenCompose(dbPort -> tenantDatabaseProvisionService.runSingleNodeAppContainer(request.getTenantId())
+                        .thenApply(singleNodePort -> new int[]{dbPort, singleNodePort}))
+                .thenApply(ports -> {
+                    int dbPort = ports[0];
+                    int singleNodePort = ports[1];
                     Tenant tenant = new Tenant();
                     tenant.setTenantId(request.getTenantId());
                     tenant.setDriverClassName("org.postgresql.Driver");
-                    tenant.setUrl("jdbc:postgresql://localhost:" + request.getPort() + "/" + request.getDbName());
+                    tenant.setUrl("jdbc:postgresql://localhost:" + dbPort + "/" + request.getDbName());
                     tenant.setUsername(request.getDbUser());
                     tenant.setPassword(request.getDbPassword());
+                    tenant.setSingleNodeEndpoint("http://localhost:" + singleNodePort + "/api/process");
                     return tenant;
                 })
-                .thenAccept(multitenantConfiguration::registerNewTenant);
+                .thenAccept(multitenantConfiguration::registerNewTenant)
+                .exceptionally(ex -> {
+                    logger.error("Tenant provisioning failed", ex);
+                    return null;
+                });
     }
 }

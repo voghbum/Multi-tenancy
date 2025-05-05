@@ -24,6 +24,9 @@ public class Tenant {
     @Column(nullable = false)
     private String password;
 
+    @Column
+    private String singleNodeEndpoint;
+
     public Long getId() {
         return id;
     }
@@ -72,6 +75,14 @@ public class Tenant {
         this.password = password;
     }
 
+    public String getSingleNodeEndpoint() {
+        return singleNodeEndpoint;
+    }
+
+    public void setSingleNodeEndpoint(String singleNodeEndpoint) {
+        this.singleNodeEndpoint = singleNodeEndpoint;
+    }
+
     @Override
     public String toString() {
         return "Tenant{" +
@@ -80,6 +91,7 @@ public class Tenant {
                 ", url='" + url + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
+                ", singleNodeEndpoint='" + singleNodeEndpoint + '\'' +
                 '}';
     }
 }

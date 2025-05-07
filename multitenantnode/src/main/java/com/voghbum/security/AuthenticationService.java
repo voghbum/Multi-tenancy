@@ -42,13 +42,6 @@ public class AuthenticationService {
 
     @Transactional
     public void signup(SignupRequest signupRequest) {
-        String tenantId = request.getHeader("X-TenantID");
-        if (tenantId == null || tenantId.isEmpty()) {
-            throw new AuthenticationException("Tenant ID is required");
-        }
-
-        tenantRepository.findByTenantId(tenantId)
-                .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
 
         try {
             if (userDetailsService.userExists(signupRequest.getUsername())) {
@@ -65,13 +58,6 @@ public class AuthenticationService {
     }
 
     public LoginResponse login(LoginRequest loginRequest) {
-        String tenantId = request.getHeader("X-TenantID");
-        if (tenantId == null || tenantId.isEmpty()) {
-            throw new AuthenticationException("Tenant ID is required");
-        }
-
-        tenantRepository.findByTenantId(tenantId)
-                .orElseThrow(() -> new AuthenticationException("Invalid tenant ID"));
 
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -83,7 +69,7 @@ public class AuthenticationService {
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-            String token = jwtService.generateToken(userDetails, tenantId);
+            String token = jwtService.generateToken(userDetails, TenantContext.getCurrentTenant());
 
             LoginResponse response = new LoginResponse();
             response.setToken(token);

@@ -16,8 +16,8 @@ import java.net.ServerSocket;
 class AsyncConfig {}
 
 @Service
-public class TenantDatabaseProvisionService {
-    private final Logger logger = LoggerFactory.getLogger(TenantDatabaseProvisionService.class);
+public class TenantSubServiceProvider {
+    private final Logger logger = LoggerFactory.getLogger(TenantSubServiceProvider.class);
 
     @Async
     public CompletableFuture<Integer> provisionDatabaseForTenant(String dbName, String user, String password) {

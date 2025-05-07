@@ -83,7 +83,8 @@ public class MultitenantConfiguration {
         List<Tenant> tenants = tenantRepository.findAll();
         for (Tenant tenant : tenants) {
             if(!checkConnection(tenant)) {
-                continue;
+                logger.error("occurs an error while initializing tenant datasource! {}", tenant);
+                throw new RuntimeException("occurs an error while initializing tenant datasource! " + tenant);
             }
             migrateTenantDatabase(tenant);
             if (!multitenantDataSource.containsDataSource(tenant.getTenantId())) {

@@ -15,9 +15,9 @@ public class TenantResolverByJWT extends TenantResolver{
 
     @Override
     public String resolve0(ServletRequest request) {
-        String authHeader = ((HttpServletRequest) request).getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+        String jwtHeader = ((HttpServletRequest) request).getHeader("Authorization");
+        if (jwtHeader != null && jwtHeader.startsWith("Bearer ")) {
+            String token = jwtHeader.substring(7);
             return jwtService.extractTenantId(token);
         }
         return null;

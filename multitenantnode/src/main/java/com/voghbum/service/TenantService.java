@@ -2,7 +2,6 @@ package com.voghbum.service;
 
 import com.voghbum.db.conf.MultitenantConfiguration;
 import com.voghbum.db.master.entity.Tenant;
-import com.voghbum.db.master.repository.TenantRepository;
 import com.voghbum.dto.TenantCreateRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,20 +10,20 @@ import org.springframework.stereotype.Service;
 @Service
 public class TenantService {
     private final Logger logger = LoggerFactory.getLogger(TenantService.class);
-    private final TenantDatabaseProvisionService tenantDatabaseProvisionService;
+    private final TenantSubServiceProvider tenantSubServiceProvider;
     private final MultitenantConfiguration multitenantConfiguration;
 
-    public TenantService(TenantDatabaseProvisionService tenantDatabaseProvisionService, MultitenantConfiguration multitenantConfiguration) {
-        this.tenantDatabaseProvisionService = tenantDatabaseProvisionService;
+    public TenantService(TenantSubServiceProvider tenantSubServiceProvider, MultitenantConfiguration multitenantConfiguration) {
+        this.tenantSubServiceProvider = tenantSubServiceProvider;
         this.multitenantConfiguration = multitenantConfiguration;
     }
 
     public void createNewTenantStack(TenantCreateRequest request) {
         logger.info("Creating new tenant stack for tenant: {}", request.getTenantId());
 
-        tenantDatabaseProvisionService.provisionDatabaseForTenant(request.getDbName(),
+        tenantSubServiceProvider.provisionDatabaseForTenant(request.getDbName(),
                 request.getDbUser(), request.getDbPassword())
-                .thenCompose(dbPort -> tenantDatabaseProvisionService.runSingleNodeAppContainer(request.getTenantId())
+                .thenCompose(dbPort -> tenantSubServiceProvider.runSingleNodeAppContainer(request.getTenantId())
                         .thenApply(singleNodePort -> new int[]{dbPort, singleNodePort}))
                 .thenApply(ports -> {
                     int dbPort = ports[0];

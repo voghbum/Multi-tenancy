@@ -18,7 +18,6 @@ import javax.sql.DataSource;
 import java.util.Properties;
 
 @Configuration
-@EnableTransactionManagement
 @EnableJpaRepositories(
         basePackages = "com.voghbum.db.master.repository",
         entityManagerFactoryRef = "masterEntityManagerFactory",

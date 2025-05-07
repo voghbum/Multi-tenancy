@@ -3,7 +3,6 @@ package com.voghbum.controller;
 import com.voghbum.db.conf.MultitenantConfiguration;
 import com.voghbum.db.master.entity.Tenant;
 import com.voghbum.db.master.repository.TenantRepository;
-import com.voghbum.service.TenantDatabaseProvisionService;
 import com.voghbum.dto.TenantCreateRequest;
 import com.voghbum.service.TenantService;
 import org.slf4j.Logger;
@@ -12,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api/tenant")

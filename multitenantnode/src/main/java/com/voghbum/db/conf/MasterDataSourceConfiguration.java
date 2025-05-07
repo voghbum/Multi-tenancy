@@ -58,7 +58,7 @@ public class MasterDataSourceConfiguration {
         em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
         
         Properties properties = new Properties();
-        properties.setProperty("hibernate.hbm2ddl.auto", "update");
+        properties.setProperty("hibernate.hbm2ddl.auto", "none");
         properties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         em.setJpaProperties(properties);
         

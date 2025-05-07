@@ -11,10 +11,6 @@ import java.io.BufferedReader;
 import java.util.concurrent.CompletableFuture;
 import java.net.ServerSocket;
 
-@Configuration
-@EnableAsync
-class AsyncConfig {}
-
 @Service
 public class TenantSubServiceProvider {
     private final Logger logger = LoggerFactory.getLogger(TenantSubServiceProvider.class);
